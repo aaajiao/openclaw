@@ -89,7 +89,7 @@ export function createProcessSupervisor(): ProcessSupervisor {
     const noOutputTimeoutMs = clampTimeout(input.noOutputTimeoutMs);
 
     const setForcedReason = (reason: TerminationReason) => {
-      if (forcedReason) {
+      if (settled || forcedReason) {
         return;
       }
       forcedReason = reason;
