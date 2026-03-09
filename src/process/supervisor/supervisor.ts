@@ -206,17 +206,17 @@ export function createProcessSupervisor(): ProcessSupervisor {
         }
         settled = true;
         clearTimers();
+        adapter.dispose();
+        active.delete(runId);
         // Yield to the event loop so that any stdout/stderr data events
         // still queued in the I/O phase are delivered before we snapshot
         // stdout/stderr.  This closes a race where block-buffered child
         // output (e.g. bun on a pipe inside Docker) is flushed at exit
         // and the data callback fires in the same libuv poll cycle as
-        // the 'close' event.  The yield MUST happen after settled=true
-        // and clearTimers() to prevent cancel/timeout from overriding
-        // the exit reason during the gap.  See openclaw/openclaw#30711.
+        // the 'close' event.  The yield is placed after settled/timers/
+        // active cleanup so that cancel() cannot set forcedReason during
+        // the gap (the run is no longer in active).  #30711
         await new Promise<void>((resolve) => setImmediate(resolve));
-        adapter.dispose();
-        active.delete(runId);
 
         const reason: TerminationReason =
           forcedReason ?? (result.signal != null ? ("signal" as const) : ("exit" as const));
