@@ -40,9 +40,11 @@ export function createProcessSupervisor(): ProcessSupervisor {
     if (!current) {
       return;
     }
-    registry.updateState(runId, "exiting", {
-      terminationReason: reason,
-    });
+    // Registry state is updated inside setForcedReason (called via
+    // requestCancel), which is guarded by the per-run `settled` flag.
+    // Calling registry.updateState directly here would bypass that guard
+    // and allow a cancel arriving during the post-settle I/O drain yield
+    // to overwrite a successful exit with "manual-cancel".  #30711
     current.run.cancel(reason);
   };
 
